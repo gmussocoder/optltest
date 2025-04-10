@@ -1,0 +1,18 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+asyncpg
+psycopg2-binary
+
+# OpenTelemetry core
+opentelemetry-sdk
+opentelemetry-distro
+
+# Exporters
+opentelemetry-exporter-otlp
+
+# Instrumentations
+opentelemetry-instrumentation
+opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-sqlalchemy
+
