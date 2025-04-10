@@ -31,18 +31,3 @@ tracer = trace.get_tracer(__name__)
 def read_root():
     with tracer.start_as_current_span("root-handler"):
         return {"message": "Hola desde FastAPI + OTEL!"}
-
-
-#from fastapi import FastAPI
-#from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-#from opentelemetry import trace
-#from opentelemetry.trace import get_tracer
-
-#app = FastAPI()
-#FastAPIInstrumentor().instrument_app(app)
-#tracer = get_tracer(__name__)
-
-#@app.get("/")
-#def read_root():
-#    with tracer.start_as_current_span("root-handler"):
-#        return {"message": "Hola desde FastAPI + OTEL!"}
