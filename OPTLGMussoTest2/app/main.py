@@ -13,7 +13,7 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry import trace
 
 app = FastAPI()
-FastAPIInstrumentor().instrument_app(app)
+#FastAPIInstrumentor().instrument_app(app)
 tracer = trace.get_tracer(__name__)
 
 @app.get("/")
