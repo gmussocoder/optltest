@@ -1,0 +1,83 @@
+services:
+  fastapi-app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_TRACES_EXPORTER=otlp
+    depends_on:
+      - otel-collector
+      - postgres
+      - postgres2
+    restart: always   # ← AÑADÍ ESTO
+    networks:
+      - observability3
+      
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydatabase
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init-db1.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - observability3
+
+  postgres2:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user2
+      POSTGRES_PASSWORD: password2
+      POSTGRES_DB: mydatabase2
+    ports:
+      - "5433:5432" # Puerto del host: 5433 → Puerto interno del contenedor: 5432
+    volumes:
+      - ./init-db2.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - observability3
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.98.0
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"
+#      - "4318:4318"
+    restart: always   # ← Y ESTO TAMBIÉN
+    networks:
+      - observability3
+
+  tempo:
+    image: grafana/tempo:latest
+    command: ["-config.file=/etc/tempo/tempo-config.yaml"]
+    volumes:
+      - ./tempo-config.yaml:/etc/tempo/tempo-config.yaml
+      - ./tempo-data:/tmp/tempo
+    ports:
+      - "3200:3200"
+      - "4318:4318"  # OTLP HTTP
+      - "9095:9095"  # gRPC internal
+    networks:
+      - observability3
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+    networks:
+      - observability3
+
+volumes:
+  grafana-storage:
+
+networks:
+  observability3:
+    driver: bridge
