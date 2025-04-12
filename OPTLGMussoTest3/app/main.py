@@ -15,33 +15,30 @@
 #     "--service_name=fastapi-app", \
 #     "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
-from fastapi import FastAPI
+#from fastapi import FastAPI
 #from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from fastapi import FastAPI
 from opentelemetry import trace
 from app.db import SessionLocal1, SessionLocal2
-from app.models import Item, Orden
 from sqlalchemy import text
 
 app = FastAPI()
 tracer = trace.get_tracer(__name__)
-#FastAPIInstrumentor().instrument_app(app)
 
 @app.get("/")
 async def read_root():
     with tracer.start_as_current_span("root-handler"):
         async with SessionLocal1() as session1:
-            result1 = await session1.execute(text("SELECT * FROM items"))
-            items = result1.fetchall()
+            async with session1.begin():
+                result1 = await session1.execute(text("SELECT * FROM items"))
+                items = result1.fetchall()
 
         async with SessionLocal2() as session2:
-            result2 = await session2.execute(text("SELECT * FROM ordenes"))
-            ordenes = result2.fetchall()
+            async with session2.begin():
+                result2 = await session2.execute(text("SELECT * FROM ordenes"))
+                ordenes = result2.fetchall()
 
         return {
-            "items": [dict(row) for row in items],
-            "ordenes": [dict(row) for row in ordenes]
+            "items": [dict(row._mapping) for row in items],
+            "ordenes": [dict(row._mapping) for row in ordenes]
         }
-@app.get("/items")
-async def read_items():
-    return {"message": "Items endpoint works"}
-
