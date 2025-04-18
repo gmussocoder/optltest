@@ -1,0 +1,37 @@
+server:
+  http_listen_port: 3200
+  grpc_listen_port: 9095
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+        http:
+          endpoint: 0.0.0.0:4318
+
+ingester:
+  trace_idle_period: 10s
+  max_block_duration: 5m
+
+compactor:
+  compaction:
+    block_retention: 1h
+
+metrics_generator:
+  storage:
+    path: /tmp/tempo/generator/wal
+  processor:
+    span_metrics:
+      dimensions: ["http.method", "http.status_code", "service.name"]
+    service_graphs:
+      dimensions: ["service.name", "service.namespace"]
+  registry:
+    external_labels:
+      source: tempo
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /tmp/tempo/traces

@@ -1,0 +1,123 @@
+services:
+  fastapi-app:
+    build: .
+    container_name: optlgmussotest4-fastapi-app
+    ports:
+      - "8000:8000"
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_TRACES_EXPORTER=otlp
+    depends_on:
+      - otel-collector
+      - postgres
+      - postgres2
+    restart: always   # ← AÑADÍ ESTO
+    networks:
+      - observability4
+      
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydatabase
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init-db1.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - observability4
+
+  postgres2:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user2
+      POSTGRES_PASSWORD: password2
+      POSTGRES_DB: mydatabase2
+    ports:
+      - "5433:5432" # Puerto del host: 5433 → Puerto interno del contenedor: 5432
+    volumes:
+      - ./init-db2.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - observability4
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.98.0
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"
+      - "8889:8889" #Dado que se usa Prometheus como exporter.
+#      - "4318:4318"
+    restart: always   # ← Y ESTO TAMBIÉN
+    networks:
+      - observability4
+
+  tempo:
+    image: grafana/tempo:2.3.1
+    command: ["-config.file=/etc/tempo/tempo-config.yaml"]
+    volumes:
+      - ./tempo-config.yaml:/etc/tempo/tempo-config.yaml
+      - ./tempo-data:/tmp/tempo
+    ports:
+      - "3200:3200"
+      - "4318:4318"  # OTLP HTTP
+      - "9095:9095"  # gRPC internal
+    restart: always   # ← AÑADÍ ESTO
+    networks:
+      - observability4
+
+  loki: 
+  #  image: grafana/loki:2.9.1
+    image: grafana/loki:2.9.1
+    container_name: optlgmussotest4-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-data:/loki-data
+      - ./loki-config.yaml:/etc/loki/config.yaml
+      # - ./loki-config.yaml:/etc/loki/local-config.yaml
+      # - ./loki-data/index:/tmp/loki/index
+      # - ./loki-data/chunks:/tmp/loki/chunks
+      # - ./loki-data/boltdb-cache:/tmp/loki/boltdb-cache
+      # - ./loki-data/wal:/wal
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: always   # ← AÑADÍ ESTO
+    networks:
+      - observability4
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: optlgmussotest4-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    restart: always   # ← AÑADÍ ESTO
+    networks:
+      - observability4
+
+  grafana:
+    image: grafana/grafana:10.2.3
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+      - ./grafana/provisioning/plugins:/etc/grafana/provisioning/plugins
+    networks:
+      - observability4
+    restart: always   # ← AÑADÍ ESTO
+    depends_on:
+      - tempo
+      - prometheus
+
+volumes:
+  grafana-storage:
+
+networks:
+  observability4:
+    driver: bridge
