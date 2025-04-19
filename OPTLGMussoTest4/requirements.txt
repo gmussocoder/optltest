@@ -17,6 +17,9 @@ opentelemetry-instrumentation
 opentelemetry-instrumentation-fastapi
 opentelemetry-instrumentation-sqlalchemy
 
+# OpenTelemetry Logs
+opentelemetry-sdk[logs]  # Añadido para manejar los logs
+
 #Prometheus Client
 prometheus_client
 
