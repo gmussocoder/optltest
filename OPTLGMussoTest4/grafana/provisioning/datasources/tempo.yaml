@@ -20,7 +20,7 @@ datasources:
         customQuery: true
         query: 'method="$${__span.tags.method}"'
       tracesToMetrics:
-        datasourceUid: 'prom'
+        datasourceUid: 'prometheus'
         spanStartTimeShift: '-1h'
         spanEndTimeShift: '1h'
         tags: [{ key: 'service.name', value: 'service' }, { key: 'job' }]
@@ -50,7 +50,7 @@ datasources:
         tag: 'http.path'
       streamingEnabled:
         search: true
-
+    version: 1
 
   - name: Loki
     type: loki
@@ -60,9 +60,14 @@ datasources:
     jsonData:
       derivedFields:
         - name: TraceID
-          matcherRegex: "traceID=(\\w+)"
+          matcherRegex: '"traceid":"([a-f0-9]+)"'   #"trace_id\":\"([a-f0-9]+)\""
           url: '$${__value.raw}'
           urlDisplayLabel: 'View Trace'
+          datasourceUid: tempo
+        - name: SpanID
+          matcherRegex: '"spanid":"([a-f0-9]+)"'
+          url: '$${__value.raw}'
+          urlDisplayLabel: 'View Span'
           datasourceUid: tempo
 
   - name: Prometheus
@@ -71,3 +76,6 @@ datasources:
     url: http://prom:9090
     isDefault: false
     uid: prometheus
+    jsonData:
+        httpMethod: GET
+    version: 1

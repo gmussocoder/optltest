@@ -12,6 +12,7 @@ distributor:
 
 ingester:
   trace_idle_period: 10s
+  max_block_bytes: 1_048_576
   max_block_duration: 5m
 
 compactor:
@@ -20,15 +21,17 @@ compactor:
 
 metrics_generator:
   storage:
-    path: /tmp/tempo/generator/wal
+    path: /tmp/tempo/generator
   processor:
     span_metrics:
       dimensions: ["http.method", "http.status_code", "service.name"]
     service_graphs:
-      dimensions: ["service.name", "service.namespace"]
-  registry:
-    external_labels:
-      source: tempo
+      wait: 10s
+      max_items: 10000
+
+memberlist:
+  join_members:
+    - tempo:7946
 
 storage:
   trace:
